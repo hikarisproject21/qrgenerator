@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate QR Code</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Poppins";
+        }
+
+        body {
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 2rem;
+            background: #f0f0f0;
+            box-shadow: -15px -15px 30px #e6e6e6, 15px 15px 30px #ffffff;
+            border-radius: 20px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 500px;
+            padding-top: 2rem;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .inputGroup {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 1rem 0;
+        }
+
+        input, button {
+            font-size: 1em;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            cursor: pointer;
+            margin: 2rem 0;
+            background-color: #f0f0f0;
+            color: #000;
+            border: none;
+            box-shadow: -5px -5px 10px #e6e6e6, 5px 5px 10px #ffffff;
+            outline: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #d8d8d8;
+        }
+
+        #qrCode {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #qrCode img {
+            width: 150px;
+            height: 180px;
+        }
+
+        table {
+            min-width: 500px;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #cccccc00;
+        }
+
+        th, td {
+            padding: 0;
+            text-align: center;
+            white-space: nowrap;
+            min-height: 500px;
+            vertical-align: middle;
+        }
+
+        img {
+            width: 90px;
+            height: 90px;
+        }
+
+        input[type="file"] {
+            width: 80%;
+            max-width: 300px;
+        }
+
+        input[type="checkbox"] {
+            accent-color: #000000;
+            border: 2px solid black;
+        }
+
+        label {
+            font-size: 13px;
+        }
+
+        p {
+            text-align: center;
+        }
+        
+
+        @media screen and (max-width: 600px) {
+            table {
+                overflow-x: auto;
+                white-space: nowrap;
+                min-width: 80vw;
+            border-collapse: collapse;
+            margin-top: 10px;
+            }
+            input [type="text"] {
+                width: 190px;
+            }
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>QR Code Generator</h3>
+        <p>Manually and from an xlsx file </p>
+    </div>
+    <div class="container">
+        <h3>Generate QR Code</h3>
+        <div class="inputGroup">
+            <input type="text" id="text-input" size="20" placeholder="Masukkan teks atau URL">
+            <label>
+                <input type="checkbox" id="include-name" checked>
+                Sertakan Nama dalam QR Code
+            </label>
+            <button onclick="generateQRCode()">Generate QR Code</button>
+        </div>
+
+        <div id="qrCode"></div>
+    </div>
+
+    <div class="container">
+        <h3>Upload File Excel</h3>
+        <input type="file" id="fileInput" accept=".xlsx">
+        <label>
+            <input type="checkbox" id="include-name2" checked>
+            Sertakan Nama dalam QR Code
+        </label>
+        <button onclick="processExcel()">Generate QR From Excel</button>
+        <div id="qrTable"></div>
+    </div>
+
+    <script>
+        // Fungsi untuk menyimpan data Excel ke localStorage
+        function saveExcelDataToLocalStorage(data) {
+            localStorage.setItem('excelData', JSON.stringify(data)); // Menyimpan data Excel ke localStorage
+        }
+    
+        // Fungsi untuk memuat data Excel dari localStorage saat halaman dimuat
+        function loadExcelDataFromLocalStorage() {
+            const savedExcelData = localStorage.getItem('excelData');
+            if (savedExcelData) {
+                const data = JSON.parse(savedExcelData);
+                generateQRFromExcel(data); // Menampilkan QR code dan tabel dari data yang disimpan
+            }
+        }
+    
+    // Fungsi untuk menyimpan QR Code ke localStorage
+function saveQRCodeToLocalStorage(qrData) {
+    localStorage.setItem('generatedQRCode', JSON.stringify(qrData));
+}
+
+// Fungsi untuk mengambil QR Code dari localStorage
+function loadQRCodeFromLocalStorage() {
+    const savedQRCode = localStorage.getItem('generatedQRCode');
+    if (savedQRCode) {
+        const qrData = JSON.parse(savedQRCode);
+        displayQRCode(qrData);
+    }
+}
+
+// Fungsi untuk menampilkan QR Code yang disimpan
+function displayQRCode(qrData) {
+    const qrContainer = document.getElementById('qrCode');
+    qrContainer.innerHTML = ''; // Clear previous QR Code
+    const finalImage = new Image();
+    finalImage.src = qrData.imgSrc;
+    qrContainer.appendChild(finalImage);
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.innerText = "Download QR Code";
+    downloadBtn.onclick = function () {
+        const link = document.createElement('a');
+        link.href = qrData.imgSrc;
+        link.download = 'qrcode.png';
+        link.click();
+    };
+
+    qrContainer.appendChild(downloadBtn);
+}
+
+function generateQRCode() {
+    const text = document.getElementById('text-input').value;
+    const includeName = document.getElementById('include-name').checked;
+
+    if (!text.trim()) {
+        alert("Silakan masukkan teks.");
+        return;
+    }
+
+    const qrContainer = document.getElementById('qrCode');
+    qrContainer.innerHTML = ""; // Bersihkan QR sebelumnya
+
+    QRCode.toDataURL(text, { errorCorrectionLevel: 'H', color: { dark: '#000000', light: '#00000000' } }, function(err, url) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        const img = new Image();
+        img.src = url;
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const size = 200; // Ukuran QR Code
+            const textHeight = 90; // Ruang untuk teks
+            canvas.width = size;
+            canvas.height = size + textHeight;
+
+            // Gambar QR Code
+            ctx.drawImage(img, 0, 0, size, size);
+
+            // Jika checkbox dicentang, tampilkan teks di bawah QR Code
+            if (includeName) {
+                ctx.font = "20px Poppins";
+                ctx.fillStyle = "#000";
+                ctx.textAlign = "center";
+                ctx.fillText(text, size / 2, size + 15);
+            }
+
+            // Tampilkan hasil di halaman
+            const finalImage = document.createElement('img');
+            finalImage.src = canvas.toDataURL();
+            qrContainer.appendChild(finalImage);
+
+            // Simpan ke localStorage
+            const qrData = {
+                text: text,
+                imgSrc: canvas.toDataURL()
+            };
+            saveQRCodeToLocalStorage(qrData);
+
+            // Tombol download
+            const downloadBtn = document.createElement('button');
+            downloadBtn.innerText = "Download QR Code";
+            downloadBtn.onclick = function () {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL();
+                link.download = 'qrcode.png';
+                link.click();
+            };
+
+            qrContainer.appendChild(downloadBtn);
+        };
+    });
+}
+
+function processExcel() {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput.files.length) {
+        alert("Pilih file Excel terlebih dahulu.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        generateQRFromExcel(jsonData);
+        saveExcelDataToLocalStorage(jsonData);  // Menyimpan data Excel ke localStorage
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+function saveExcelDataToLocalStorage(data) {
+    localStorage.setItem('excelData', JSON.stringify(data)); // Menyimpan data Excel ke localStorage
+}
+
+function loadExcelDataFromLocalStorage() {
+    const savedExcelData = localStorage.getItem('excelData');
+    if (savedExcelData) {
+        const data = JSON.parse(savedExcelData);
+        generateQRFromExcel(data); // Menampilkan QR code dan tabel dari data yang disimpan
+    }
+}
+
+function generateQRFromExcel(data) {
+    const qrTable = document.getElementById('qrTable');
+    qrTable.innerHTML = ""; // Kosongkan tabel jika sudah ada data sebelumnya
+
+    if (data.length === 0) {
+        alert("File kosong atau format salah.");
+        return;
+    }
+
+    const table = document.createElement('table');
+    const headerRow = document.createElement('tr');
+    const headers = ["No", "QR Code", "Download"];
+
+    headers.forEach(headerText => {
+        const th = document.createElement('th');
+        th.innerText = headerText;
+        headerRow.appendChild(th);
+    });
+
+    table.appendChild(headerRow);
+
+    data.forEach((row, index) => {
+        if (row.length === 0 || !row[0]) return;
+
+        const text = row[0];
+        const tr = document.createElement('tr');
+
+        const tdIndex = document.createElement('td');
+        tdIndex.innerText = index + 1;
+        tr.appendChild(tdIndex);
+
+        const tdQR = document.createElement('td');
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = 200;
+        const textHeight = 40;
+        canvas.width = size;
+        canvas.height = size + textHeight;
+
+        QRCode.toDataURL(text, { errorCorrectionLevel: 'H', color: { dark: '#000000', light: '#00000000' } }, function (err, url) {
+            if (err) {
+                console.error(err);
+                return;
+            }
+
+            const img = new Image();
+            img.src = url;
+            img.onload = function () {
+                ctx.drawImage(img, 0, 0, size  , size  );
+
+                ctx.font = "25px Poppins";
+                ctx.fillStyle = "#000";
+                ctx.textAlign = "center";
+                ctx.fillText(text, size / 2, size + 25);  // Nama selalu tampil di tabel
+
+                const finalImage = document.createElement('img');
+                finalImage.src = canvas.toDataURL();
+                tdQR.appendChild(finalImage);
+
+                const tdDownload = document.createElement('td');
+                const downloadBtn = document.createElement('button');
+                downloadBtn.innerText = "Download";
+
+                downloadBtn.onclick = function () {
+                    const downloadCanvas = document.createElement('canvas');
+                    const downloadCtx = downloadCanvas.getContext('2d');
+                    downloadCanvas.width = size;
+                    downloadCanvas.height = size + textHeight;
+
+                    downloadCtx.drawImage(img, 0, 0, size, size);
+
+                    const includeName = document.getElementById('include-name2').checked;
+                    if (includeName) {
+                        downloadCtx.font = "20px Poppins";
+                        downloadCtx.fillStyle = "#000";
+                        downloadCtx.textAlign = "center";
+                        downloadCtx.fillText(text, size / 2, size + 25);
+                    }
+
+                    const link = document.createElement('a');
+                    link.href = downloadCanvas.toDataURL();
+                    link.download = `qrcode_${index + 1}.png`;
+                    link.click();
+                };
+
+                tdDownload.appendChild(downloadBtn);
+                tr.appendChild(tdQR);
+                tr.appendChild(tdDownload);
+            };
+        });
+
+        table.appendChild(tr);
+    });
+
+    qrTable.appendChild(table);
+}
+
+// Muat data Excel dan QR Code saat halaman dimuat
+window.onload = function() {
+    loadQRCodeFromLocalStorage();
+    loadExcelDataFromLocalStorage(); // Muat data Excel saat halaman dimuat
+};
+    </script>
+    
+</body>
+</html>
