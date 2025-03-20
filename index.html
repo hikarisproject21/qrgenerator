@@ -115,7 +115,20 @@
             accent-color: #000000;
             border: 2px solid black;
         }
+        input[type="text"] {
+    width: 90%; /* Menyesuaikan lebar layar */
+    max-width: 400px; /* Batasi agar tidak terlalu besar di layar besar */
+    padding: 10px;
+    border: none;
+    outline: none;
+    background: transparent;
+    border-bottom: 2px solid #ccc;
+    font-size: 16px; /* Ukuran font cukup besar untuk HP */
+}
 
+input[type="text"]:focus {
+    border-bottom: 2px solid #000;
+}
         label {
             font-size: 13px;
         }
@@ -133,9 +146,9 @@
             border-collapse: collapse;
             margin-top: 10px;
             }
-            input [type="text"] {
-                width: 190px;
-            }
+           input[type="text"] {
+        font-size: 14px; /* Sedikit lebih kecil di layar kecil */
+    }
         }
         
     </style>
