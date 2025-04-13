@@ -316,15 +316,13 @@ function processExcel() {
         const sheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // Ambil data dari kolom pertama (kolom "Nama")
-        const names = jsonData.map(row => row[0]); // Mengambil nama dari setiap baris
-
-        generateQRFromExcel(names); // Generate QR dari nama-nama tersebut
-        saveExcelDataToLocalStorage(names);  // Menyimpan nama ke localStorage
+        generateQRFromExcel(jsonData);
+        saveExcelDataToLocalStorage(jsonData);  // Menyimpan data Excel ke localStorage
     };
 
     reader.readAsArrayBuffer(file);
 }
+        
 function saveExcelDataToLocalStorage(data) {
     localStorage.setItem('excelData', JSON.stringify(data)); // Menyimpan data Excel ke localStorage
 }
