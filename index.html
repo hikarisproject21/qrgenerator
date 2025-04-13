@@ -356,15 +356,15 @@ function generateQRFromExcel(data) {
 
     table.appendChild(headerRow);
 
-    data.forEach((row, index) => {
-        if (row.length === 0 || !row[0]) return;
+    data.slice(1).forEach((row, index) => {
+    if (row.length === 0 || !row[0]) return;
 
-        const text = row[0];
-        const tr = document.createElement('tr');
+    const text = row[0];
+    const tr = document.createElement('tr');
 
-        const tdIndex = document.createElement('td');
-        tdIndex.innerText = index + 1;
-        tr.appendChild(tdIndex);
+    const tdIndex = document.createElement('td');
+    tdIndex.innerText = index + 1;
+    tr.appendChild(tdIndex);
 
         const tdQR = document.createElement('td');
         const canvas = document.createElement('canvas');
